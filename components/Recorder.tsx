@@ -4,19 +4,23 @@ import { useEffect, useState, useRef } from 'react';
 
 declare global {
   interface Window {
-    assemblyai: any;
+    assemblyai: {
+      RealtimeService: new (config: { token: string }) => RealtimeService;
+    };
   }
 }
 
-interface RecorderProps {
-  onTranscriptReceived: (transcript: string) => void;
+interface RealtimeService {
+  connect: () => Promise<void>;
+  sendAudio: (audio: ArrayBuffer) => void;
+  close: (waitForPendingMessages: boolean) => Promise<void>;
+  on: (event: 'transcript' | 'error', callback: (data: TranscriptMessage | Error) => void) => void;
 }
 
-type AudioData = {
-  audio: Blob;
-  start: number;
-  end: number;
-};
+interface TranscriptMessage {
+  message_type: 'PartialTranscript' | 'FinalTranscript';
+  text: string;
+}
 
 export default function Recorder() {
   const [isRecording, setIsRecording] = useState(false);
@@ -24,7 +28,7 @@ export default function Recorder() {
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [translation, setTranslation] = useState('');
-  const [rt, setRt] = useState<any>(null);
+  const [rt, setRt] = useState<RealtimeService | null>(null);
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
@@ -143,10 +147,9 @@ export default function Recorder() {
         // Initialize AssemblyAI real-time service
         const rtService = new window.assemblyai.RealtimeService({ token: data.token });
         
-        const _texts: Record<string, string> = {};
         let currentTranscript = transcript;
 
-        rtService.on('transcript', async (message: any) => {
+        rtService.on('transcript', async (message: TranscriptMessage) => {
           if (message.message_type === 'PartialTranscript') {
             // For partial transcripts, only show the current segment
             setTranscript(currentTranscript + ' ' + message.text);
@@ -175,7 +178,7 @@ export default function Recorder() {
           }
         });
 
-        rtService.on('error', (error: any) => {
+        rtService.on('error', (error: Error) => {
           console.error('AssemblyAI error:', error);
         });
 
@@ -209,7 +212,7 @@ export default function Recorder() {
         workletNodeRef.current = workletNode;
 
         // Handle processed audio data
-        workletNode.port.onmessage = (event) => {
+        workletNode.port.onmessage = (event: MessageEvent<ArrayBuffer>) => {
           if (rtService) {
             rtService.sendAudio(event.data);
           }

@@ -4,7 +4,10 @@
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-unused-vars": ["error", {
       "argsIgnorePattern": "^_",
-      "varsIgnorePattern": "^_"
-    }]
+      "varsIgnorePattern": "^_",
+      "destructuredArrayIgnorePattern": "^_"
+    }],
+    "@typescript-eslint/consistent-type-imports": ["warn"],
+    "@typescript-eslint/no-unsafe-assignment": "off"
   }
 } 
