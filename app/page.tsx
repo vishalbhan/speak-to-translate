@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React from 'react';
 import dynamic from 'next/dynamic';
 
 // Dynamically import the Recorder component to avoid SSR issues

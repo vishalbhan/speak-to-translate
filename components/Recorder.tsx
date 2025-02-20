@@ -8,6 +8,16 @@ declare global {
   }
 }
 
+interface RecorderProps {
+  onTranscriptReceived: (transcript: string) => void;
+}
+
+type AudioData = {
+  audio: Blob;
+  start: number;
+  end: number;
+};
+
 export default function Recorder() {
   const [isRecording, setIsRecording] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
@@ -133,7 +143,7 @@ export default function Recorder() {
         // Initialize AssemblyAI real-time service
         const rtService = new window.assemblyai.RealtimeService({ token: data.token });
         
-        const texts: Record<string, string> = {};
+        const _texts: Record<string, string> = {};
         let currentTranscript = transcript;
 
         rtService.on('transcript', async (message: any) => {
