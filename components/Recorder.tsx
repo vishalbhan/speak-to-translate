@@ -14,7 +14,8 @@ interface RealtimeService {
   connect: () => Promise<void>;
   sendAudio: (audio: ArrayBuffer) => void;
   close: (waitForPendingMessages: boolean) => Promise<void>;
-  on: (event: 'transcript' | 'error', callback: (data: TranscriptMessage | Error) => void) => void;
+  on(event: 'transcript', callback: (data: TranscriptMessage) => void): void;
+  on(event: 'error', callback: (error: Error) => void): void;
 }
 
 interface TranscriptMessage {
@@ -149,32 +150,31 @@ export default function Recorder() {
         
         let currentTranscript = transcript;
 
-        rtService.on('transcript', async (message: TranscriptMessage) => {
+        rtService.on('transcript', (message: TranscriptMessage) => {
           if (message.message_type === 'PartialTranscript') {
-            // For partial transcripts, only show the current segment
             setTranscript(currentTranscript + ' ' + message.text);
           } else if (message.message_type === 'FinalTranscript') {
-            // For final transcripts, append and save
             currentTranscript += ' ' + message.text;
             setTranscript(currentTranscript);
 
             // Handle translation
-            try {
-              const response = await fetch('/api/translate', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  text: message.text,
-                  target_lang: (document.getElementById('translation-language') as HTMLSelectElement).value,
-                }),
-              });
-              const data = await response.json();
+            fetch('/api/translate', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                text: message.text,
+                target_lang: (document.getElementById('translation-language') as HTMLSelectElement).value,
+              }),
+            })
+            .then(response => response.json())
+            .then(data => {
               setTranslation(prev => prev + ' ' + data.translation.text);
-            } catch (error) {
+            })
+            .catch(error => {
               console.error('Translation error:', error);
-            }
+            });
           }
         });
 
