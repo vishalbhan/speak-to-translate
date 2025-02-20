@@ -2,10 +2,6 @@ import * as deepl from 'deepl-node';
 
 const translator = new deepl.Translator(process.env.DEEPL_API_KEY!);
 
-interface TranslationError extends Error {
-  message: string;
-}
-
 export async function POST(request: Request) {
   try {
     const { text, target_lang } = await request.json();
